@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29418.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SonicColorsUltimate_TailsNavigatorSwitcher", "SonicColorsUltimate_TailsNavigatorSwitcher.csproj", "{B4635C15-1E24-4B2F-B625-7538E48B75EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B4635C15-1E24-4B2F-B625-7538E48B75EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4635C15-1E24-4B2F-B625-7538E48B75EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4635C15-1E24-4B2F-B625-7538E48B75EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4635C15-1E24-4B2F-B625-7538E48B75EF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6DCE3CAF-217E-4A6C-880D-D6E5307AC257}
+	EndGlobalSection
+EndGlobal
