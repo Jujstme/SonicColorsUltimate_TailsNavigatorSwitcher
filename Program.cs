@@ -1,68 +1,97 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using LiveSplit.ComponentUtil;
 
 namespace SonicColorsUltimate_TailsNavigatorSwitcher
 {
-    static class Program
+    class Program
     {
-        static readonly string appName = "Sonic Colors Ultimate - Tails Navigator Switcher";
+        static string exeName = "Sonic Colors - Ultimate";
+        static MainForm Form1 = new MainForm();
+        static Process game = null;
+        static SignatureScanner scanner;
+        static IntPtr ptr;
+        static SigScanTarget scanTarget = new SigScanTarget(5, "74 2B 48 8B 0D ????????");
         static void Main()
         {
             Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            Task task = new Task(() => FormTask());
+            task.Start();
+            Application.Run(Form1);
+        }
 
-            Process[] gameList = Process.GetProcessesByName("Sonic Colors - Ultimate");
-            if (gameList.Length == 0) {
-                MessageBox.Show("Game not detected!\nPlease ensure you are running the game!", appName, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
-            }
 
-            Process game = gameList.First();
-            var scanner = new SignatureScanner(game, game.MainModule.BaseAddress, game.MainModule.ModuleMemorySize);
-
-            IntPtr ptr = scanner.Scan(new SigScanTarget(5,
-                "74 2B",               // je "Sonic colors - Ultimate.exe"+16F3948
-                "48 8B 0D ????????")); // mov rcx,["Sonic colors - Ultimate.exe"+52462A8]
-            if (ptr == IntPtr.Zero)
+        public static void FormTask()
+        {
+            while (true)
             {
-                MessageBox.Show("Could not detect target address!", "Sonic Colors Ultimate - Tails Navigator Switcher", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Environment.Exit(0);
-            }
+                if (!processIsRunning())
+                {
+                    Form1.BeginInvoke((MethodInvoker)delegate () { Form1.label2.Text = "GAME NOT RUNNING"; });
+                    game = null;
+                    Thread.Sleep(1000);
+                    continue;
+                }
+                if (game == null)
+                { 
+                    game = Process.GetProcessesByName(exeName).FirstOrDefault();
+                    scanner = new SignatureScanner(game, game.MainModule.BaseAddress, game.MainModule.ModuleMemorySize);
+                    ptr = scanner.Scan(scanTarget);
+                    Form1.BeginInvoke((MethodInvoker)delegate () { Form1.button1.Enabled = true; });
+                    Form1.BeginInvoke((MethodInvoker)delegate () { Form1.button2.Enabled = true; });
+                }
+                if (game.HasExited)
+                {
+                    game = null;
+                    Form1.BeginInvoke((MethodInvoker)delegate () { Form1.button1.Enabled = false; });
+                    Form1.BeginInvoke((MethodInvoker)delegate () { Form1.button2.Enabled = false; });
+                    Thread.Sleep(1000);
+                    continue;
+                }
 
-            var pointerAddr = new DeepPointer(ptr + 4 + game.ReadValue<int>(ptr), 0x60).Deref<IntPtr>(game);
-            int status = game.ReadValue<byte>(pointerAddr + 7); 
-            
-            if (status == 1)
-            {
-                var question = MessageBox.Show("Tails Navigator is currently ENABLED\n" +
-                                               "Do you want to disable it?", "Sonic Colors Ultimate - Tails Navigator Switcher", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (question == DialogResult.Yes)
+
+                if (ptr != IntPtr.Zero)
                 {
-                    game.WriteValue<byte>(pointerAddr + 7, 0x0);
-                    MessageBox.Show("Tails Navigator disabled.", "Sonic Colors Ultimate - Tails Navigator Switcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    int status = game.ReadValue<byte>(new DeepPointer(ptr + 4 + game.ReadValue<int>(ptr), 0x60).Deref<IntPtr>(game) + 7);
+                    if (status == 1)
+                    {
+                        Form1.BeginInvoke((MethodInvoker)delegate () { Form1.label2.Text = "ENABLED"; });
+                    }
+                    else if (status == 0)
+                    {
+                        Form1.BeginInvoke((MethodInvoker)delegate () { Form1.label2.Text = "DISABLED"; });
+                    }
                 }
-                else
-                {
-                    MessageBox.Show("Tails Navigator stays enabled.", "Sonic Colors Ultimate - Tails Navigator Switcher", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            } else if (status == 0)
-            {
-                var question = MessageBox.Show("Tails Navigator is currently DISABLED\n" +
-                               "Do you want to enable it?", appName, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (question == DialogResult.Yes)
-                {
-                    game.WriteValue<byte>(pointerAddr + 7, 0x1);
-                    MessageBox.Show("Tails Navigator enabled.", appName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Tails Navigator stays disabled.", appName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+                Thread.Sleep(300);
             }
-            Environment.Exit(0);
+        }
+
+        private static bool processIsRunning()
+        {
+            foreach (Process process in Process.GetProcesses())
+            {
+                if (process.ProcessName.Contains(exeName)) return true;
+            }
+            return false;
+        }
+
+        public static void but1_Click(object sender, EventArgs e)
+        {
+            if (game != null)
+            {
+                game.WriteValue<byte>(new DeepPointer(ptr + 4 + game.ReadValue<int>(ptr), 0x60).Deref<IntPtr>(game) + 7, 0x1);
+            }
+        }
+        public static void but2_Click(object sender, EventArgs e)
+        {
+            if (game != null)
+            {
+                game.WriteValue<byte>(new DeepPointer(ptr + 4 + game.ReadValue<int>(ptr), 0x60).Deref<IntPtr>(game) + 7, 0x0);
+            }
         }
     }
 }
